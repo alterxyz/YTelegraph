@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name="ytelegraph",
-    version="0.1.0",
+    version="0.1.2",
     author="alterxyz",
     author_email="88554920+alterxyz@users.noreply.github.com",
     description="A simple Python wrapper for the Telegraph API",
@@ -16,14 +16,13 @@ setup(
     install_requires=[
         "requests",
         "beautifulsoup4",
-        "markdown",
+        "Markdown",
     ],
     classifiers=[
         "Development Status :: 3 - Alpha",
         "Intended Audience :: Developers",
         "License :: OSI Approved :: MIT License",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
@@ -31,7 +30,7 @@ setup(
         "Topic :: Internet :: WWW/HTTP",
         "Topic :: Software Development :: Libraries :: Python Modules",
     ],
-    python_requires=">=3.7",
+    python_requires=">=3.8",
     keywords="telegraph api wrapper markdown publishing",
     project_urls={
         "Bug Tracker": "https://github.com/alterxyz/ytelegraph/issues",
