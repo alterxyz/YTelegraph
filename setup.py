@@ -4,8 +4,8 @@ with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
 setup(
-    name="ytelegraph",
-    version="0.1.2",
+    name="your-telegraph",
+    version="0.1.4",
     author="alterxyz",
     author_email="88554920+alterxyz@users.noreply.github.com",
     description="A simple Python wrapper for the Telegraph API",

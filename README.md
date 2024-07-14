@@ -3,6 +3,7 @@
 YTelegraph is a simple, user-friendly Python wrapper for the Telegraph API. Publish your content to Telegraph with just a few lines of code!
 
 ## Table of Contents
+
 - [YTelegraph](#ytelegraph)
     - [Table of Contents](#table-of-contents)
     - [Installation](#installation)
@@ -12,6 +13,7 @@ YTelegraph is a simple, user-friendly Python wrapper for the Telegraph API. Publ
     - [More Examples](#more-examples)
         - [Create a page from a Markdown file](#create-a-page-from-a-markdown-file)
         - [Use your own Telegraph token](#use-your-own-telegraph-token)
+        - [Advanced Usage](#advanced-usage)
     - [Token Management](#token-management)
     - [Testing](#testing)
     - [Versioning](#versioning)
@@ -82,6 +84,10 @@ ph = TelegraphAPI(TELEGRA_PH_TOKEN)
 
 This method is useful if you want to use an existing Telegraph account or manage tokens yourself.
 
+### Advanced Usage
+
+Try and see the `example/second_usage.py` at [here](examples/second_usage.py).
+
 ## Token Management
 
 YTelegraph offers flexible token management:
@@ -98,12 +104,12 @@ To run the basic integration tests, execute the examples in the `examples/` dire
 
 ```bash
 python examples/basic_usage.py
-python examples/advanced_usage.py
+python examples/second_usage.py
 ```
 
 ## Versioning
 
-We use [SemVer](http://semver.org/) for versioning. For the versions available, see the [CHANGELOG.md](CHANGELOG.md) file.
+For the versions available, see the [CHANGELOG.md](CHANGELOG.md) file.
 
 ## Support
 

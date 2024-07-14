@@ -238,24 +238,20 @@ class TelegraphAPI:
             bool: True if the page was successfully deleted, False otherwise.
         """
         path = self._extract_path(path)
-        expected_content = json.dumps(
-            [{"tag": "p", "children": ["This page has been deleted."]}]
-        )
+        expected_content = [{"tag": "p", "children": ["This page has been deleted."]}]
         data: Dict[str, Any] = {
             "access_token": self.account.access_token,
             "path": path,
             "title": "404",
-            "content": expected_content,
+            "content": json.dumps(expected_content),
             "author_name": "Deleted",
             "author_url": None,
         }
         result: Dict[str, Any] = self._make_request("POST", "editPage", data)
         # Verify deletion by checking the latest content.
         latest_content = self.get_page(path)
-        if latest_content == expected_content:
-            return True
-        else:
-            return False
+        # Compare the content as lists of dictionaries
+        return latest_content == expected_content
 
     def get_page(self, path: str, return_content: bool = True) -> List[Dict[str, Any]]:
         """Retrieves a Telegraph page.

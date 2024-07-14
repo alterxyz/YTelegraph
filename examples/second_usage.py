@@ -42,7 +42,9 @@ ph = TelegraphAPI()  # or `ph = TelegraphAPI(my_token)``
 content = "# Hello, Telegraph!\n\nThis is my first Telegraph page using YTelegraph. \n\nI have edited this page using YTelegraph."
 
 # Path or url like <https://telegra.ph/Sample-Page-12-15> are both accepted
-my_path = "My-First-Page-07-14-3"  # replace my_path with your path
+my_path = input(
+    "Please provide your page url or path"
+)  # replace my_path with your path
 
 ph.edit_page_md(path=my_path, title="My First Page", content=content)
 
