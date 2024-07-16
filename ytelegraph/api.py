@@ -1,5 +1,6 @@
 import json
 import re
+import time
 from typing import Optional, Dict, List, Any, Union
 
 import requests
@@ -164,18 +165,20 @@ class TelegraphAPI:
     def edit_page(
         self,
         path: str,
-        title: str,
         content: List[Dict[str, Any]],
+        title: Optional[str] = None,
         author_name: Optional[str] = None,
         author_url: Optional[str] = None,
         return_content: bool = False,
     ) -> str:
         """Edits an existing Telegraph page with raw content.
 
+        If no title is provided, the original title of the page will be used.
+
         Args:
             path: The path or URL of the page to edit.
-            title: The new title of the page.
             content: The new content of the page in Telegraph node format.
+            title: The new title of the page. If None, the original title is kept.
             author_name: The new author name for this specific page.
             author_url: The new author URL for this specific page.
             return_content: Whether to return the content in the response.
@@ -187,6 +190,8 @@ class TelegraphAPI:
             Use the `edit_page_md` method for Markdown content.
         """
         path = self._extract_path(path)
+        if not title:
+            title = self.get_page(path)["title"]
         data: Dict[str, Any] = {
             "access_token": self.account.access_token,
             "path": path,
@@ -202,18 +207,20 @@ class TelegraphAPI:
     def edit_page_md(
         self,
         path: str,
-        title: str,
         content: str,
+        title: Optional[str] = None,
         author_name: Optional[str] = None,
         author_url: Optional[str] = None,
         return_content: bool = False,
     ) -> str:
         """Edits an existing Telegraph page with Markdown content.
 
+        If no title is provided, the original title of the page will be used.
+
         Args:
             path: The path or URL of the page to edit.
-            title: The new title of the page.
             content: The new content of the page in Markdown format.
+            title: The new title of the page. If None, the original title is kept.
             author_name: The new author name for this specific page.
             author_url: The new author URL for this specific page.
             return_content: Whether to return the content in the response.
@@ -222,9 +229,67 @@ class TelegraphAPI:
             str: The URL of the edited page.
         """
         telegraph_content: List[Dict[str, Any]] = md_to_dom(content)
-        return self.edit_page(
-            path, title, telegraph_content, author_name, author_url, return_content
+        result = self.edit_page(
+            path, telegraph_content, title, author_name, author_url, return_content
         )
+        return result
+
+    def edit_page_md_append_to_front(
+        self,
+        path: str,
+        content: str,
+        title: Optional[str] = None,
+        author_name: Optional[str] = None,
+        author_url: Optional[str] = None,
+        return_content: bool = False,
+    ) -> str:
+        """Appends Markdown content to the front of an existing Telegraph page.
+
+        Args:
+            path: The path or URL of the page to edit.
+            content: The Markdown content to append to the front of the page.
+            title: The new title of the page. If None, the original title is kept.
+            author_name: The new author name for this specific page.
+            author_url: The new author URL for this specific page.
+            return_content: Whether to return the content in the response.
+
+        Returns:
+            str: The URL of the edited page.
+        """
+        telegraph_content = md_to_dom(content) + self.get_page(path)["content"]
+        result = self.edit_page(
+            path, telegraph_content, title, author_name, author_url, return_content
+        )
+        return result
+
+    def edit_page_md_append_to_back(
+        self,
+        path: str,
+        content: str,
+        title: Optional[str] = None,
+        author_name: Optional[str] = None,
+        author_url: Optional[str] = None,
+        return_content: bool = False,
+    ) -> str:
+        """Appends Markdown content to the back of an existing Telegraph page.
+
+        Args:
+            path: The path or URL of the page to edit.
+            content: The Markdown content to append to the back of the page.
+            title: The new title of the page. If None, the original title is kept.
+            author_name: The new author name for this specific page.
+            author_url: The new author URL for this specific page.
+            return_content: Whether to return the content in the response.
+
+        Returns:
+            str: The URL of the edited page.
+        """
+        original_content = self.get_page(path)["content"]
+        telegraph_content: List[Dict[str, Any]] = original_content + md_to_dom(content)
+        result = self.edit_page(
+            path, telegraph_content, title, author_name, author_url, return_content
+        )
+        return result
 
     def delete_page(self, path: str) -> bool:
         """Deletes a Telegraph page.
@@ -253,25 +318,68 @@ class TelegraphAPI:
         # Compare the content as lists of dictionaries
         return latest_content == expected_content
 
-    def get_page(self, path: str, return_content: bool = True) -> List[Dict[str, Any]]:
-        """Retrieves a Telegraph page.
+    def get_page(
+        self,
+        path: str,
+        return_content: bool = True,
+        retry: bool = True,
+        max_retries: int = 3,
+        retry_delay: float = 1.0,
+    ) -> Dict[str, Any]:
+        """Retrieves a Telegraph page with retry mechanism and custom error content.
 
         Args:
             path: The path or URL of the page to retrieve.
             return_content: Whether to return the content in the response.
+            retry: Whether to use the retry mechanism.
+            max_retries: Maximum number of retry attempts if retry is True.
+            retry_delay: Delay between retry attempts in seconds if retry is True.
 
         Returns:
-            list: The content of the page in Telegraph node format.
-                An empty list is returned if `return_content` is False
-                or the page is not found.
+            dict: A dictionary containing:
+                - 'success': Boolean indicating if the operation was successful.
+                - 'title': The title of the page (None if unsuccessful).
+                - 'content': The content of the page or custom error content.
+                - 'error': Original error message (if not successful).
+                - 'attempts': Number of attempts made to retrieve the page.
+
+        Note:
+            If all retry attempts fail, a custom error content in Markdown format
+            will be returned instead of the actual page content.
         """
         path = self._extract_path(path)
         data: Dict[str, Any] = {
             "path": path,
             "return_content": return_content,
         }
-        result: Dict[str, Any] = self._make_request("GET", "getPage", data)
-        return result.get("content", [])
+
+        result = {
+            "success": False,
+            "title": None,
+            "content": [],
+            "error": None,
+            "attempts": 0,
+        }
+
+        for attempt in range(max_retries if retry else 1):
+            result["attempts"] += 1
+            try:
+                api_result: Dict[str, Any] = self._make_request("GET", "getPage", data)
+                result["success"] = True
+                result["content"] = api_result.get("content", [])
+                result["title"] = api_result.get("title")
+                return result
+            except Exception as e:
+                result["error"] = str(e)
+                if attempt < max_retries - 1 and retry:
+                    time.sleep(retry_delay)
+                else:
+                    # Create custom error content
+                    error_md = f"# Error\n\nFailed to retrieve page after {result['attempts']} attempts.\n\nError: {result['error']}"
+                    result["content"] = md_to_dom(error_md)
+                    return result
+
+        return result
 
     def get_page_list(self, offset: int = 0, limit: int = 50) -> Dict[str, Any]:
         """Retrieves a list of pages belonging to the Telegraph account.

@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - 2024-07-16
+
+### Added
+
+- New methods `edit_page_md_append_to_front` and `edit_page_md_append_to_back` for appending content to existing pages
+- Retry mechanism in `get_page` method with customizable max retries and delay
+- Custom error content generation for failed page retrievals
+- More comprehensive docstrings following Google style guide
+
+### Changed
+
+- `edit_page` and `edit_page_md` methods now accept an optional `title` parameter
+- Improved error handling in various methods
+- Refactored code for better reusability and maintainability
+
+### Fixed
+
+- Issue with title retrieval in `edit_page` when no new title is provided
+
 ## [0.1.0] - 2024-07-14
 
 ### Added

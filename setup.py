@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name="your-telegraph",
-    version="0.1.4",
+    version="0.2.0",
     author="alterxyz",
     author_email="88554920+alterxyz@users.noreply.github.com",
     description="A simple Python wrapper for the Telegraph API",

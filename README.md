@@ -1,5 +1,11 @@
 # YTelegraph
 
+[![PyPi Package Version](https://img.shields.io/pypi/v/your-telegraph.svg)](https://pypi.python.org/pypi/your-telegraph)
+[![Supported Python versions](https://img.shields.io/pypi/pyversions/your-telegraph.svg)](https://pypi.python.org/pypi/your-telegraph)
+[![PyPi downloads](https://img.shields.io/pypi/dm/your-telegraph.svg)](https://pypi.org/project/your-telegraph/)
+[![PyPi status](https://img.shields.io/pypi/status/your-telegraph.svg?style=flat-square)](https://pypi.python.org/pypi/your-telegraph)
+![License](https://img.shields.io/github/license/alterxyz/ytelegraph)
+
 YTelegraph is a simple, user-friendly Python wrapper for the Telegraph API. Publish your content to Telegraph with just a few lines of code!
 
 ## Table of Contents
