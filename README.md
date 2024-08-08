@@ -21,6 +21,7 @@ YTelegraph is a simple, user-friendly Python wrapper for the Telegraph API. Publ
         - [Use your own Telegraph token](#use-your-own-telegraph-token)
         - [Advanced Usage](#advanced-usage)
     - [Token Management](#token-management)
+    - [Create Account](#create-account)
     - [Testing](#testing)
     - [Versioning](#versioning)
     - [Support](#support)
@@ -103,6 +104,38 @@ YTelegraph offers flexible token management:
 3. **Direct Input**: Pass your token directly to the `TelegraphAPI` constructor.
 
 Choose the method that best fits your workflow and security requirements.
+
+## Create Account
+
+While YTelegraph handles account creation automatically, you might want to create your own Telegraph account for more control. Here's a quick guide:
+
+1. Visit this URL in your browser (feel free to customize the parameters):
+   `https://api.telegra.ph/createAccount?short_name=Sandbox&author_name=Anonymous`
+
+   - Replace `Sandbox` with any name to help you remember this account (only visible to you)
+   - Change `Anonymous` to your preferred author name (default for your articles)
+   - Or keep them as is – it's totally fine!
+
+2. After accessing the link, you'll see a response like this:
+
+   ```json
+   {
+     "ok": true,
+     "result": {
+       "short_name": "Sandbox",
+       "author_name": "Anonymous",
+       "author_url": "",
+       "access_token": "abcedfeghijklmnopqrstuvwxyz",
+       "auth_url": "https://edit.telegra.ph/auth/qwertyuiop"
+     }
+   }
+   ```
+
+3. The `access_token` (in this example, `abcedfeghijklmnopqrstuvwxyz`) is what you'll use in your code. (Note: This is not a real token!)
+
+For more details, check out the [Telegraph API documentation](https://telegra.ph/api#createAccount).
+
+YTelegraph makes this process super easy, but it's good to know how to do it manually if you ever need to.
 
 ## Testing
 
