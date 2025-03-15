@@ -1,10 +1,124 @@
-from bs4 import BeautifulSoup
-import markdown
-from typing import List, Dict, Any, Union
+from mistletoe import Document, block_token, span_token
+from mistletoe.base_renderer import BaseRenderer
 
 
-def md_to_dom(markdown_text: str) -> List[Dict[str, Any]]:
-    """Converts Markdown text to a Telegraph-compatible DOM structure.
+
+class TelegraphDomRenderer(BaseRenderer):
+    """
+    A custom renderer that converts a mistletoe AST into a DOM list
+    of dictionaries for Telegraph. Each dictionary represents a node
+    with a tag, optional attributes, and children.
+    """
+    def render_document(self, token: block_token.Document):
+        # The top-level document returns a list of nodes.
+        return [self.render(child) for child in token.children]
+
+    def render_paragraph(self, token: block_token.Paragraph):
+        return {"tag": "p", "children": self.render_inner(token)}
+
+    def render_heading(self, token: block_token.Heading):
+        # Mimic original behavior:
+        # - h1 -> h3, h2 -> h4
+        # - Other headings -> paragraph with strong text.
+        if token.level == 1:
+            return {"tag": "h3", "children": self.render_inner(token)}
+        elif token.level == 2:
+            return {"tag": "h4", "children": self.render_inner(token)}
+        else:
+            return {"tag": "p", "children": [{"tag": "strong", "children": self.render_inner(token)}]}
+
+    def render_list(self, token: block_token.List):
+        # If token.start is not None, we treat it as an ordered list (ol), otherwise unordered (ul).
+        tag = "ol" if token.start is not None else "ul"
+        # token.children should be ListItem tokens.
+        return {"tag": tag, "children": [self.render(child) for child in token.children]}
+
+    def render_list_item(self, token: block_token.ListItem):
+        return {"tag": "li", "children": self.render_inner(token)}
+
+    def render_strong(self, token: span_token.Strong):
+        return {"tag": "strong", "children": self.render_inner(token)}
+
+    def render_emphasis(self, token: span_token.Emphasis):
+        return {"tag": "em", "children": self.render_inner(token)}
+
+    def render_inline_code(self, token: span_token.InlineCode):
+        # Return inline code as a code tag.
+        # token.content should hold the text.
+        return {"tag": "code", "children": [token.children[0].content if token.children else token.content]}
+
+    def render_strikethrough(self, token: span_token.Strikethrough):
+        return {"tag": "del", "children": self.render_inner(token)}
+
+    def render_image(self, token: span_token.Image):
+        # Build an image element with its src and optional alt/title.
+        attrs = {"src": token.src}
+        alt_text = self.render_inner(token)
+        if alt_text:
+            attrs["alt"] = alt_text
+        if token.title:
+            attrs["title"] = token.title
+        return {"tag": "img", "attrs": attrs}
+
+    def render_link(self, token: span_token.Link):
+        attrs = {"href": token.target}
+        if token.title:
+            attrs["title"] = token.title
+        return {"tag": "a", "attrs": attrs, "children": self.render_inner(token)}
+
+    def render_auto_link(self, token: span_token.AutoLink):
+        # AutoLink tokens are similar to link tokens.
+        return {"tag": "a", "attrs": {"href": token.target}, "children": [token.target]}
+
+    def render_raw_text(self, token: span_token.RawText):
+        return token.content
+
+    def render_line_break(self, token: span_token.LineBreak):
+        # For a soft break, return a newline; otherwise, a <br> element.
+        if token.soft:
+            return "\n"
+        else:
+            return {"tag": "br"}
+
+    def render_block_code(self, token: block_token.BlockCode):
+        # Return code block as <pre><code> structure.
+        code_dict = {"tag": "code", "children": [token.content]}
+        if token.language:
+            code_dict.setdefault("attrs", {})["class"] = "language-" + token.language
+        return {"tag": "pre", "children": [code_dict]}
+
+    def render_quote(self, token: block_token.Quote):
+        return {"tag": "blockquote", "children": self.render_inner(token)}
+
+    def render_thematic_break(self, token: block_token.ThematicBreak):
+        return {"tag": "hr"}
+
+    def render_html_block(self, token: block_token.HTMLBlock):
+        # If raw HTML is encountered, you may choose to either ignore it
+        # or return it as plain text. Here we return it as a text node.
+        return token.content
+
+    def render_html_span(self, token: span_token.HTMLSpan):
+        return token.content
+
+    def render_inner(self, token):
+        """
+        Helper method that renders all children of a token.
+        If a child rendering returns a list, it is flattened.
+        """
+        result = []
+        for child in token.children:
+            rendered = self.render(child)
+            if isinstance(rendered, list):
+                result.extend(rendered)
+            else:
+                result.append(rendered)
+        return result
+
+
+def md_to_dom(markdown_text: str):
+    """
+    Converts Markdown text to a Telegraph-compatible DOM structure.
 
     Args:
         markdown_text: The input Markdown text to be converted.
@@ -28,152 +142,9 @@ def md_to_dom(markdown_text: str) -> List[Dict[str, Any]]:
                     "children": ["Link text"]
                 }
             ]
-            ```
     """
-    html = markdown.markdown(markdown_text, extensions=["extra", "sane_lists"])
-    soup = BeautifulSoup(html, "html.parser")
-    return [parse_element(element) for element in soup.contents if element.name]
+    with TelegraphDomRenderer() as renderer:
+        # The Document token is the root of the AST.
+        ast = renderer.render(Document(markdown_text))
+        return ast
 
-
-def parse_element(element) -> Dict[str, Any]:
-    """Parses an HTML element to a Telegraph-compatible format.
-
-    Args:
-        element: The HTML element to parse. This should be a
-            `bs4.element.Tag` object.
-
-    Returns:
-        dict: A dictionary representing the parsed element.
-            The dictionary will have a "tag" key indicating the
-            element type, and may have "attrs" and "children" keys
-            for attributes and child elements, respectively.
-    """
-    tag_dict = {"tag": element.name}
-
-    if element.name in ["h1", "h2", "h3", "h4", "h5", "h6"]:
-        tag_dict = handle_heading(element)
-    elif element.name in ["ul", "ol"]:
-        tag_dict = handle_list(element)
-    elif element.name == "a":
-        tag_dict = handle_link(element)
-    elif element.name in ["img", "iframe"]:
-        return handle_media(element)
-    else:
-        tag_dict["children"] = parse_children(element)
-
-    return tag_dict
-
-
-def handle_heading(element) -> Dict[str, Any]:
-    """Converts heading elements to Telegraph-compatible format.
-
-    Args:
-        element: The heading element to convert.
-
-    Returns:
-        dict: A dictionary representing the converted heading.
-            H1 and H2 headings are converted to H3 and H4
-            respectively, while other headings are converted to
-            paragraphs with strong text.
-    """
-    if element.name == "h1":
-        return {"tag": "h3", "children": parse_children(element)}
-    elif element.name == "h2":
-        return {"tag": "h4", "children": parse_children(element)}
-    else:
-        return {
-            "tag": "p",
-            "children": [{"tag": "strong", "children": parse_children(element)}],
-        }
-
-
-def handle_list(element) -> Dict[str, Any]:
-    """Converts list elements to Telegraph-compatible format.
-
-    Args:
-        element: The list element to convert.
-
-    Returns:
-        dict: A dictionary representing the converted list.
-    """
-    return {
-        "tag": element.name,
-        "children": [
-            {"tag": "li", "children": parse_children(li)}
-            for li in element.find_all("li", recursive=False)
-        ],
-    }
-
-
-def handle_link(element) -> Dict[str, Any]:
-    """Converts link elements to Telegraph-compatible format.
-
-    Args:
-        element: The link element to convert.
-
-    Returns:
-        dict: A dictionary representing the converted link.
-    """
-    return {
-        "tag": "a",
-        "attrs": {"href": element.get("href")},
-        "children": parse_children(element),
-    }
-
-
-def handle_media(element) -> Dict[str, Any]:
-    """Converts media elements to Telegraph-compatible format.
-
-    Args:
-        element: The media element to convert.
-
-    Returns:
-        dict: A dictionary representing the converted media element.
-    """
-    return {"tag": element.name, "attrs": {"src": element.get("src")}}
-
-
-def parse_children(element) -> List[Union[str, Dict[str, Any]]]:
-    """Parses the children of an HTML element.
-
-    Args:
-        element: The parent HTML element.
-
-    Returns:
-        list: A list of parsed child elements. Each element in the
-            list is either a string representing text content, or
-            a dictionary representing a child element.
-    """
-    return [
-        parse_element(child) if child.name else child.strip()
-        for child in element.children
-        if child.name or (isinstance(child, str) and child.strip())
-    ]
-
-
-ALLOWED_TAGS = {
-    "a",
-    "aside",
-    "b",
-    "blockquote",
-    "br",
-    "code",
-    "em",
-    "figcaption",
-    "figure",
-    "h3",
-    "h4",
-    "hr",
-    "i",
-    "iframe",
-    "img",
-    "li",
-    "ol",
-    "p",
-    "pre",
-    "s",
-    "strong",
-    "u",
-    "ul",
-    "video",
-}
