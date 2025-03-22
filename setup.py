@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name="your-telegraph",
-    version="0.2.0",
+    version="0.2.1",
     author="alterxyz",
     author_email="88554920+alterxyz@users.noreply.github.com",
     description="A simple Python wrapper for the Telegraph API",
@@ -26,6 +26,8 @@ setup(
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
         "Operating System :: OS Independent",
         "Topic :: Internet :: WWW/HTTP",
         "Topic :: Software Development :: Libraries :: Python Modules",

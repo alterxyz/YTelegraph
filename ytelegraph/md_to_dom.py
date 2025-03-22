@@ -145,7 +145,7 @@ def parse_children(element) -> List[Union[str, Dict[str, Any]]]:
             a dictionary representing a child element.
     """
     return [
-        parse_element(child) if child.name else child.strip()
+        parse_element(child) if child.name else str(child)
         for child in element.children
         if child.name or (isinstance(child, str) and child.strip())
     ]
