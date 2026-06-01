@@ -3,6 +3,7 @@
 [![PyPi Package Version](https://img.shields.io/pypi/v/your-telegraph.svg)](https://pypi.python.org/pypi/your-telegraph)
 [![Supported Python versions](https://img.shields.io/pypi/pyversions/your-telegraph.svg)](https://pypi.python.org/pypi/your-telegraph)
 [![PyPi downloads](https://img.shields.io/pypi/dm/your-telegraph.svg)](https://pypi.org/project/your-telegraph/)
+[![PyPI Downloads](https://static.pepy.tech/personalized-badge/your-telegraph?period=total&units=INTERNATIONAL_SYSTEM&left_color=BLACK&right_color=GREEN&left_text=downloads)](https://pepy.tech/projects/your-telegraph)
 [![PyPi status](https://img.shields.io/pypi/status/your-telegraph.svg?style=flat-square)](https://pypi.python.org/pypi/your-telegraph)
 ![License](https://img.shields.io/github/license/alterxyz/ytelegraph)
 
