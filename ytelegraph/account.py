@@ -39,6 +39,7 @@ class TelegraphAccount:
         short_name: str = "Your Name",
         author_name: str = "Anonymous",
         author_url: Optional[str] = None,
+        request_timeout: float = 10.0,
     ) -> None:
         """Initializes a TelegraphAccount object.
 
@@ -52,10 +53,13 @@ class TelegraphAccount:
                 Only used when creating a new account. Defaults to "Anonymous".
             author_url: The author URL associated with the account.
                 Only used when creating a new account. Defaults to None.
+            request_timeout: Timeout in seconds for Telegraph API requests.
         """
         self.base_url: str = "https://api.telegra.ph"
+        self.request_timeout: float = request_timeout
         self.access_token: str = (
             access_token
+            or os.environ.get("TELEGRA_PH_TOKEN")
             or self._get_token()
             or self._create_account(short_name, author_name, author_url)
         )
@@ -95,7 +99,7 @@ class TelegraphAccount:
         """
         token_file: Path = self._get_token_file_path()
         if token_file.exists():
-            with open(token_file, "r") as f:
+            with open(token_file, "r", encoding="utf-8") as f:
                 return f.read().strip()
         return None
 
@@ -107,8 +111,12 @@ class TelegraphAccount:
         """
         token_file: Path = self._get_token_file_path()
         token_file.parent.mkdir(parents=True, exist_ok=True)
-        with open(token_file, "w") as f:
+        with open(token_file, "w", encoding="utf-8") as f:
             f.write(token)
+        try:
+            os.chmod(token_file, 0o600)
+        except OSError:
+            pass
 
     def _delete_token(self) -> None:
         """Deletes the access token file."""
@@ -137,11 +145,17 @@ class TelegraphAccount:
             "author_url": author_url,
         }
         try:
-            response: requests.Response = requests.post(url, data=data)
+            response: requests.Response = requests.post(
+                url, data=data, timeout=self.request_timeout
+            )
             response.raise_for_status()
-            access_token: str = response.json()["result"]["access_token"]
+            result: Dict[str, Any] = response.json()
+            if not result.get("ok"):
+                print(f"Error creating account: {result.get('error', 'Unknown error')}")
+                return None
+            access_token: str = result["result"]["access_token"]
             self._save_token(access_token)
-            print(f"Account created with access token: {access_token}")
+            print("Account created and access token saved.")
             return access_token
         except RequestException as e:
             print(f"Error creating account: {e}")
@@ -161,11 +175,19 @@ class TelegraphAccount:
         url: str = f"{self.base_url}/getAccountInfo"
         params: Dict[str, Any] = {"access_token": self.access_token}
         if fields:
-            params["fields"] = "[" + ",".join(f'"{field}"' for field in fields) + "]"
+            params["fields"] = json.dumps(fields)
         try:
-            response: requests.Response = requests.get(url, params=params)
+            response: requests.Response = requests.get(
+                url, params=params, timeout=self.request_timeout
+            )
             response.raise_for_status()
-            return response.json()["result"]
+            result: Dict[str, Any] = response.json()
+            if not result.get("ok"):
+                print(
+                    f"Error getting account info: {result.get('error', 'Unknown error')}"
+                )
+                return {}
+            return result["result"]
         except RequestException as e:
             print(f"Error getting account info: {e}")
             return {}
@@ -191,10 +213,18 @@ class TelegraphAccount:
         url: str = f"{self.base_url}/revokeAccessToken"
         data: Dict[str, str] = {"access_token": self.access_token}
         try:
-            response: requests.Response = requests.post(url, data=data)
+            response: requests.Response = requests.post(
+                url, data=data, timeout=self.request_timeout
+            )
             response.raise_for_status()
+            result: Dict[str, Any] = response.json()
+            if not result.get("ok"):
+                print(
+                    f"Error revoking access token: {result.get('error', 'Unknown error')}"
+                )
+                return False
             self._delete_token()
-            new_token: str = response.json()["result"]["access_token"]
+            new_token: str = result["result"]["access_token"]
             self._save_token(new_token)
             self.access_token = new_token
             return True
@@ -221,16 +251,24 @@ class TelegraphAccount:
         """
         url: str = f"{self.base_url}/editAccountInfo"
         data: Dict[str, Any] = {"access_token": self.access_token}
-        if short_name:
+        if short_name is not None:
             data["short_name"] = short_name
-        if author_name:
+        if author_name is not None:
             data["author_name"] = author_name
-        if author_url:
+        if author_url is not None:
             data["author_url"] = author_url
         try:
-            response: requests.Response = requests.post(url, data=data)
+            response: requests.Response = requests.post(
+                url, data=data, timeout=self.request_timeout
+            )
             response.raise_for_status()
-            updated_info: Dict[str, Any] = response.json()["result"]
+            result: Dict[str, Any] = response.json()
+            if not result.get("ok"):
+                print(
+                    f"Error editing account info: {result.get('error', 'Unknown error')}"
+                )
+                return False
+            updated_info: Dict[str, Any] = result["result"]
             self.short_name = updated_info.get("short_name", self.short_name)
             self.author_name = updated_info.get("author_name", self.author_name)
             self.author_url = updated_info.get("author_url", self.author_url)

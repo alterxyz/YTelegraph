@@ -3,6 +3,7 @@
 [![PyPi Package Version](https://img.shields.io/pypi/v/your-telegraph.svg)](https://pypi.python.org/pypi/your-telegraph)
 [![Supported Python versions](https://img.shields.io/pypi/pyversions/your-telegraph.svg)](https://pypi.python.org/pypi/your-telegraph)
 [![PyPi downloads](https://img.shields.io/pypi/dm/your-telegraph.svg)](https://pypi.org/project/your-telegraph/)
+[![PyPI Downloads](https://static.pepy.tech/personalized-badge/your-telegraph?period=total&units=INTERNATIONAL_SYSTEM&left_color=BLACK&right_color=GREEN&left_text=downloads)](https://pepy.tech/projects/your-telegraph)
 [![PyPi status](https://img.shields.io/pypi/status/your-telegraph.svg?style=flat-square)](https://pypi.python.org/pypi/your-telegraph)
 ![License](https://img.shields.io/github/license/alterxyz/ytelegraph)
 
@@ -22,7 +23,7 @@ YTelegraph is a simple, user-friendly Python wrapper for the Telegraph API. Publ
         - [Advanced Usage](#advanced-usage)
     - [Token Management](#token-management)
     - [Create Account](#create-account)
-    - [Testing](#testing)
+    - [Development and Testing](#development-and-testing)
     - [Versioning](#versioning)
     - [Support](#support)
     - [Contributing](#contributing)
@@ -93,7 +94,7 @@ This method is useful if you want to use an existing Telegraph account or manage
 
 ### Advanced Usage
 
-Try and see the `example/second_usage.py` at [here](examples/second_usage.py).
+Try and see the `examples/second_usage.py` at [here](examples/second_usage.py).
 
 ## Token Management
 
@@ -102,6 +103,7 @@ YTelegraph offers flexible token management:
 1. **Automatic**: If no token is provided, YTelegraph creates a new account and manages the token for you.
 2. **Environment Variable**: Set the `TELEGRA_PH_TOKEN` environment variable, and YTelegraph will use it automatically.
 3. **Direct Input**: Pass your token directly to the `TelegraphAPI` constructor.
+4. **Token file path**: Set `PH_TOKEN_PATH` if you want the automatically created token stored somewhere other than the default token file.
 
 Choose the method that best fits your workflow and security requirements.
 
@@ -137,9 +139,29 @@ For more details, check out the [Telegraph API documentation](https://telegra.ph
 
 YTelegraph makes this process super easy, but it's good to know how to do it manually if you ever need to.
 
-## Testing
+## Development and Testing
 
-To run the basic integration tests, execute the examples in the `examples/` directory:
+This project still uses the small setuptools/pip workflow it started with:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt -e .
+python -m unittest discover -s tests
+python -m compileall ytelegraph tests
+python -m pip install build
+python -m build
+```
+
+You can also test the package with uv without converting the project to uv:
+
+```bash
+uv run --with-requirements requirements.txt python -m unittest discover -s tests
+uv run --with-requirements requirements.txt python -m compileall ytelegraph tests
+uv run --with build --with-requirements requirements.txt python -m build
+```
+
+The examples in `examples/` and scripts in `draft_tests/` are live Telegraph API checks. Run them intentionally because they can create or edit Telegraph pages:
 
 ```bash
 python examples/basic_usage.py

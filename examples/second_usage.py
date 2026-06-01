@@ -14,11 +14,12 @@ my_ph = account.TelegraphAccount(
 my_token_file_path = my_ph._get_token_file_path()
 
 my_token = my_ph._get_token()
+masked_token = f"{my_token[:4]}...{my_token[-4:]}" if my_token else None
 
 my_info = my_ph.get_account_info()
 
 print(
-    f"\nYour token file path: {my_token_file_path}\nYour token: {my_token}\nYour account info: {my_info}"
+    f"\nYour token file path: {my_token_file_path}\nYour token: {masked_token}\nYour account info: {my_info}"
 )
 
 # login to your account by open the link in your browser

@@ -1,7 +1,7 @@
 import json
-import re
 import time
-from typing import Optional, Dict, List, Any, Union
+from typing import Optional, Dict, List, Any
+from urllib.parse import urlparse
 
 import requests
 from requests.exceptions import RequestException
@@ -36,6 +36,7 @@ class TelegraphAPI:
         short_name: str = "Your Name",
         author_name: str = "Anonymous",
         author_url: Optional[str] = None,
+        request_timeout: float = 10.0,
     ) -> None:
         """Initializes a TelegraphAPI object.
 
@@ -44,11 +45,13 @@ class TelegraphAPI:
             short_name: The short name of the Telegraph account.
             author_name: The author name associated with the account.
             author_url: The author URL associated with the account.
+            request_timeout: Timeout in seconds for Telegraph API requests.
         """
         self.account: TelegraphAccount = TelegraphAccount(
-            access_token, short_name, author_name, author_url
+            access_token, short_name, author_name, author_url, request_timeout
         )
         self.base_url: str = "https://api.telegra.ph"
+        self.request_timeout: float = request_timeout
 
     def _make_request(
         self, method: str, endpoint: str, data: Optional[Dict[str, Any]] = None
@@ -70,9 +73,13 @@ class TelegraphAPI:
         url: str = f"{self.base_url}/{endpoint}"
         try:
             if method.upper() == "GET":
-                response: requests.Response = requests.get(url, params=data)
+                response: requests.Response = requests.get(
+                    url, params=data, timeout=self.request_timeout
+                )
             else:
-                response: requests.Response = requests.post(url, data=data)
+                response: requests.Response = requests.post(
+                    url, data=data, timeout=self.request_timeout
+                )
             response.raise_for_status()
             result = response.json()
             if not result.get("ok"):
@@ -94,12 +101,21 @@ class TelegraphAPI:
         Raises:
             ValueError: If the input is not a valid Telegraph path or URL.
         """
-        match = re.search(
-            r"(?:https?://(?:telegra\.ph/|telegraph\.com/))?([^/]+)/?$", path_or_url
-        )
-        if match:
-            return match.group(1)
-        raise ValueError("Invalid path or URL format")
+        value = path_or_url.strip()
+        parsed = urlparse(value)
+
+        if parsed.scheme or parsed.netloc:
+            host = parsed.netloc.lower()
+            allowed_hosts = {"telegra.ph", "www.telegra.ph", "telegraph.com"}
+            if parsed.scheme not in {"http", "https"} or host not in allowed_hosts:
+                raise ValueError("Invalid path or URL format")
+            path = parsed.path.strip("/")
+        else:
+            path = value.strip("/")
+
+        if not path or "/" in path:
+            raise ValueError("Invalid path or URL format")
+        return path
 
     def create_page(
         self,
@@ -312,11 +328,15 @@ class TelegraphAPI:
             "author_name": "Deleted",
             "author_url": None,
         }
-        result: Dict[str, Any] = self._make_request("POST", "editPage", data)
+        self._make_request("POST", "editPage", data)
         # Verify deletion by checking the latest content.
-        latest_content = self.get_page(path)
-        # Compare the content as lists of dictionaries
-        return latest_content == expected_content
+        latest_page = self.get_page(path)
+        # Compare the content as lists of dictionaries.
+        return bool(
+            latest_page.get("success")
+            and latest_page.get("title") == "404"
+            and latest_page.get("content") == expected_content
+        )
 
     def get_page(
         self,
@@ -365,9 +385,11 @@ class TelegraphAPI:
             result["attempts"] += 1
             try:
                 api_result: Dict[str, Any] = self._make_request("GET", "getPage", data)
+                result.update(api_result)
                 result["success"] = True
                 result["content"] = api_result.get("content", [])
                 result["title"] = api_result.get("title")
+                result["error"] = None
                 return result
             except Exception as e:
                 result["error"] = str(e)

@@ -14,9 +14,9 @@ setup(
     url="https://github.com/alterxyz/ytelegraph",
     packages=find_packages(),
     install_requires=[
-        "requests",
-        "beautifulsoup4",
-        "Markdown",
+        "requests>=2.32.3,<3.0.0",
+        "beautifulsoup4>=4.12.3,<5.0.0",
+        "Markdown>=3.6,<4.0.0",
     ],
     classifiers=[
         "Development Status :: 3 - Alpha",
@@ -28,6 +28,8 @@ setup(
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
         "Programming Language :: Python :: 3.12",
+        "Programming Language :: Python :: 3.13",
+        "Programming Language :: Python :: 3.14",
         "Operating System :: OS Independent",
         "Topic :: Internet :: WWW/HTTP",
         "Topic :: Software Development :: Libraries :: Python Modules",
