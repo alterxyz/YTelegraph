@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Added
+
+- Added deterministic unit tests for Markdown conversion, path handling, payload construction, token loading, and page retrieval behavior.
+- Added CI coverage for pip and uv workflows across current Python versions.
+- Added automatic `TELEGRA_PH_TOKEN` support.
+
+### Changed
+
+- Updated packaging classifiers through Python 3.14.
+- Preserved Telegraph page response fields from `get_page`.
+
+### Fixed
+
+- Fixed `delete_page` verification.
+- Added request timeouts for Telegraph API calls.
+- Stopped printing newly created access tokens in account creation output and examples.
+
 ## [0.2.1] - 2025-03-22
 
 ### Fixed
